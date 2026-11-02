@@ -13,6 +13,7 @@ const characterButtons = [...document.querySelectorAll('.character-btn')];
 const difficultyButtons = [...document.querySelectorAll('.difficulty-btn')];
 const selectedCharacterEl = document.getElementById('selectedCharacter');
 const leaderboardListEl = document.getElementById('leaderboardList');
+const touchControlButtons = [...document.querySelectorAll('.touch-control')];
 
 const HIGH_SCORE_KEY = 'orbit-escape-high-score';
 const LEADERBOARD_KEY = 'orbit-escape-leaderboard';
@@ -72,7 +73,7 @@ const ship = {
   slowTimer: 0,
 };
 
-const input = { left: false, right: false, up: false, down: false };
+const input = { left: false, right: false, up: false, down: false, fire: false };
 const POWERUP_COLORS = {
   rapid: '#7ee7ff',
   shield: '#8dffb1',
@@ -745,6 +746,9 @@ function update(dt) {
   ship.shieldTimer = Math.max(0, ship.shieldTimer - dt);
   ship.slowTimer = Math.max(0, ship.slowTimer - dt);
   ship.invulnerable = Math.max(0, ship.invulnerable - dt);
+  if (input.fire) {
+    fireWeapon();
+  }
 
   gameState.time += dt;
   gameState.score += dt * 14;
@@ -1011,6 +1015,36 @@ window.addEventListener('keydown', (event) => {
 
 window.addEventListener('keyup', (event) => {
   handleKeyChange(event, false);
+});
+
+function releaseTouchControl(button) {
+  const control = button.dataset.control;
+  input[control] = false;
+  button.classList.remove('is-pressed');
+}
+
+touchControlButtons.forEach((button) => {
+  button.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
+    ensureAudio();
+    const control = button.dataset.control;
+    input[control] = true;
+    button.classList.add('is-pressed');
+    button.setPointerCapture(event.pointerId);
+  });
+
+  button.addEventListener('pointerup', () => releaseTouchControl(button));
+  button.addEventListener('pointercancel', () => releaseTouchControl(button));
+  button.addEventListener('lostpointercapture', () => releaseTouchControl(button));
+});
+
+window.addEventListener('blur', () => {
+  touchControlButtons.forEach(releaseTouchControl);
+  input.left = false;
+  input.right = false;
+  input.up = false;
+  input.down = false;
+  input.fire = false;
 });
 
 canvas.addEventListener('mousemove', (event) => {

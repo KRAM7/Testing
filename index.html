@@ -43,6 +43,16 @@
 
       <canvas id="gameCanvas" width="900" height="540" aria-label="SPC RAKER game canvas"></canvas>
 
+      <div class="touch-controls" aria-label="Touch game controls">
+        <div class="touch-dpad" aria-label="Move your ship">
+          <button class="touch-control touch-up" type="button" data-control="up" aria-label="Move up">▲</button>
+          <button class="touch-control touch-left" type="button" data-control="left" aria-label="Move left">◀</button>
+          <button class="touch-control touch-down" type="button" data-control="down" aria-label="Move down">▼</button>
+          <button class="touch-control touch-right" type="button" data-control="right" aria-label="Move right">▶</button>
+        </div>
+        <button class="touch-control touch-fire" type="button" data-control="fire" aria-label="Hold to fire">FIRE</button>
+      </div>
+
       <div class="leaderboard-panel">
         <h2>Leaderboard</h2>
         <ol id="leaderboardList"></ol>
@@ -71,6 +81,7 @@
             <ul>
               <li><strong>Move:</strong> Arrow keys or WASD. Move your mouse over the game to steer.</li>
               <li><strong>Shoot:</strong> Press F, J, or K, or click the game.</li>
+              <li><strong>Phone or iPad:</strong> Use the on-screen arrows to move and hold FIRE to shoot.</li>
               <li><strong>Survive:</strong> Dodge meteors, satellites, and enemy shots. You have 3 lives, or 5 on Easy.</li>
               <li><strong>Easy mode:</strong> Fewer, slower hazards and enemy shots; bosses arrive later and have less health.</li>
               <li><strong>Power-ups:</strong> Collect glowing drops for rapid fire, spread shots, shields, an extra life, slow motion, or a bomb that clears hazards.</li>

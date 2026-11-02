@@ -26,7 +26,9 @@ Then open http://localhost:8000 in a browser.
 
 - Move: Arrow keys or WASD
 - Mouse: Move the cursor to steer the ship
+- Phone or iPad: Use the on-screen arrow buttons to move
 - Shoot: F, J, K, or left click
+- Phone or iPad: Hold the FIRE button to shoot continuously
 - Pause/resume: P or the Pause button
 - Start: Click Start Game or press Space
 
