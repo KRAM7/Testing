@@ -1,0 +1,75 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SPC RAKER</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <div class="hud">
+        <div class="hud__group">
+          <span class="label">Score</span>
+          <span id="score">0</span>
+        </div>
+        <div class="hud__group">
+          <span class="label">High Score</span>
+          <span id="highScore">0</span>
+        </div>
+        <div class="hud__group">
+          <span class="label">Lives</span>
+          <span id="lives">3</span>
+        </div>
+        <div class="hud__group">
+          <span class="label">Mode</span>
+          <span id="modeStatus">Normal</span>
+        </div>
+        <div class="hud__group">
+          <span class="label">Weapon</span>
+          <span id="weaponStatus">Pulse</span>
+        </div>
+        <div class="hud__group">
+          <span class="label">Boss</span>
+          <span id="bossStatus">None</span>
+        </div>
+        <button id="pauseButton" class="pause-button" type="button">Pause</button>
+      </div>
+
+      <div class="character-picker" aria-label="Choose a character">
+        <button class="character-btn active" type="button" data-character="nova">Nova</button>
+        <button class="character-btn" type="button" data-character="vex">Vex</button>
+      </div>
+
+      <canvas id="gameCanvas" width="900" height="540" aria-label="SPC RAKER game canvas"></canvas>
+
+      <div class="leaderboard-panel">
+        <h2>Leaderboard</h2>
+        <ol id="leaderboardList"></ol>
+      </div>
+
+      <div id="overlay" class="overlay visible">
+        <div class="panel">
+          <p class="eyebrow">Arcade Survival</p>
+          <h1>SPC RAKER</h1>
+          <p>Steer your ship, dodge the meteor shower, and survive as long as you can.</p>
+
+          <div class="selected-character">
+            <span>Selected Pilot:</span>
+            <strong id="selectedCharacter">Nova</strong>
+          </div>
+
+          <div class="difficulty-picker" aria-label="Choose difficulty">
+            <button class="difficulty-btn active" type="button" data-mode="normal">Normal</button>
+            <button class="difficulty-btn" type="button" data-mode="hard">Hard</button>
+            <button class="difficulty-btn" type="button" data-mode="insane">Insane</button>
+          </div>
+
+          <button id="startButton" type="button">Start Game</button>
+        </div>
+      </div>
+    </main>
+
+    <script src="game.js"></script>
+  </body>
+</html>
