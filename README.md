@@ -29,3 +29,7 @@ Then open http://localhost:8000 in a browser.
 - Shoot: F, J, K, or left click
 - Pause/resume: P or the Pause button
 - Start: Click Start Game or press Space
+
+## How to play
+
+Choose a pilot and difficulty, then start a run. Dodge the incoming meteors, drones, satellites, and enemy fire while shooting to destroy hazards and bosses. You start with three lives; collect power-ups for temporary rapid fire, spread shots, shields, or an extra life. Keep moving during boss waves, and try to beat your high score.
