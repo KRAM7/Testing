@@ -18,9 +18,10 @@ const HIGH_SCORE_KEY = 'orbit-escape-high-score';
 const LEADERBOARD_KEY = 'orbit-escape-leaderboard';
 const BASE_LIVES = 3;
 const MODE_CONFIG = {
-  normal: { label: 'Normal', spawnRate: 1, enemySpeed: 1, bossHealth: 1 },
-  hard: { label: 'Hard', spawnRate: 1.3, enemySpeed: 1.25, bossHealth: 1.5 },
-  insane: { label: 'Insane', spawnRate: 1.6, enemySpeed: 1.5, bossHealth: 2 },
+  easy: { label: 'Easy', lives: 5, spawnRate: 0.7, enemySpeed: 0.8, enemyBulletSpeed: 0.7, enemyFireRate: 1.3, difficultyGrowth: 0.7, bossHealth: 0.7, bossScoreInterval: 360, bossFireRate: 1.3 },
+  normal: { label: 'Normal', lives: BASE_LIVES, spawnRate: 1, enemySpeed: 1, enemyBulletSpeed: 1, enemyFireRate: 1, difficultyGrowth: 1, bossHealth: 1, bossScoreInterval: 260, bossFireRate: 1 },
+  hard: { label: 'Hard', lives: BASE_LIVES, spawnRate: 1.3, enemySpeed: 1.25, enemyBulletSpeed: 1.15, enemyFireRate: 0.9, difficultyGrowth: 1, bossHealth: 1.5, bossScoreInterval: 260, bossFireRate: 0.9 },
+  insane: { label: 'Insane', lives: BASE_LIVES, spawnRate: 1.6, enemySpeed: 1.5, enemyBulletSpeed: 1.3, enemyFireRate: 0.8, difficultyGrowth: 1, bossHealth: 2, bossScoreInterval: 260, bossFireRate: 0.8 },
 };
 
 let lastTime = 0;
@@ -47,7 +48,7 @@ const characters = {
 
 const gameState = {
   score: 0,
-  lives: BASE_LIVES,
+  lives: MODE_CONFIG.normal.lives,
   best: Number(localStorage.getItem(HIGH_SCORE_KEY) || 0),
   difficulty: 1,
   time: 0,
@@ -185,7 +186,7 @@ function applyDifficultySelection(mode) {
 
 function resetGame() {
   gameState.score = 0;
-  gameState.lives = BASE_LIVES;
+  gameState.lives = getModeSettings().lives;
   gameState.difficulty = 1;
   gameState.time = 0;
   ship.x = canvas.width / 2;
@@ -381,13 +382,13 @@ function maybeSpawnBoss() {
     return;
   }
 
-  const nextWave = Math.floor(gameState.score / 260);
+  const settings = getModeSettings();
+  const nextWave = Math.floor(gameState.score / settings.bossScoreInterval);
   if (nextWave <= bossWaveIndex) {
     return;
   }
 
   bossWaveIndex = nextWave;
-  const settings = getModeSettings();
   boss = {
     x: canvas.width / 2,
     y: 110,
@@ -398,7 +399,7 @@ function maybeSpawnBoss() {
     direction: 1,
     health: (18 + bossWaveIndex * 8) * settings.bossHealth,
     maxHealth: (18 + bossWaveIndex * 8) * settings.bossHealth,
-    fireTimer: 1.6,
+    fireTimer: 1.6 * settings.bossFireRate,
   };
   playBossSound();
 }
@@ -455,7 +456,7 @@ function powerUpShip(type) {
   } else if (type === 'spread') {
     ship.spreadTimer = 8;
   } else if (type === 'repair') {
-    gameState.lives = Math.min(BASE_LIVES, gameState.lives + 1);
+    gameState.lives = Math.min(getModeSettings().lives, gameState.lives + 1);
   }
   playPowerupSound();
 }
@@ -587,8 +588,8 @@ function updateMeteors(dt) {
     if (meteor.kind === 'satellite') {
       meteor.fireTimer -= dt;
       if (meteor.fireTimer <= 0) {
-        spawnEnemyBolt(meteor.x, meteor.y, ship.x, ship.y, 170 + gameState.difficulty * 10);
-        meteor.fireTimer = 2.8;
+        spawnEnemyBolt(meteor.x, meteor.y, ship.x, ship.y, (170 + gameState.difficulty * 10) * getModeSettings().enemyBulletSpeed);
+        meteor.fireTimer = 2.8 * getModeSettings().enemyFireRate;
       }
     }
 
@@ -635,7 +636,7 @@ function updateBoss(dt) {
   boss.fireTimer -= dt;
   if (boss.fireTimer <= 0) {
     const angle = Math.atan2(ship.y - boss.y, ship.x - boss.x);
-    const speed = 230;
+    const speed = 230 * getModeSettings().enemyBulletSpeed;
     projectiles.push({
       x: boss.x,
       y: boss.y + boss.height / 2,
@@ -646,7 +647,7 @@ function updateBoss(dt) {
       from: 'enemy',
       damage: 1,
     });
-    boss.fireTimer = Math.max(0.7, 1.8 - gameState.difficulty * 0.1);
+    boss.fireTimer = Math.max(0.7, 1.8 - gameState.difficulty * 0.1) * getModeSettings().bossFireRate;
   }
 
   if (Math.hypot(ship.x - boss.x, ship.y - boss.y) < ship.radius + boss.radius) {
@@ -708,7 +709,7 @@ function update(dt) {
 
   gameState.time += dt;
   gameState.score += dt * 14;
-  gameState.difficulty = 1 + Math.floor(gameState.score / 150);
+  gameState.difficulty = 1 + Math.floor(gameState.score / 150 * getModeSettings().difficultyGrowth);
 
   handleInput(dt);
   updateStars(dt);
