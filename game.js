@@ -362,13 +362,6 @@ function spawnMeteor() {
     obstacle.value = 12;
     obstacle.health = 2;
     obstacle.fireTimer = 2.4;
-  } else if (kindRoll > 0.4) {
-    obstacle.kind = 'drone';
-    obstacle.radius = Math.random() * 8 + 11;
-    obstacle.speed += 50;
-    obstacle.value = 15;
-    obstacle.health = 2;
-    obstacle.fireTimer = 1.8;
   }
 
   meteors.push(obstacle);
@@ -591,11 +584,11 @@ function updateMeteors(dt) {
     meteor.x += meteor.drift * dt;
     meteor.rotation += meteor.spin * dt;
 
-    if (meteor.kind === 'drone' || meteor.kind === 'satellite') {
+    if (meteor.kind === 'satellite') {
       meteor.fireTimer -= dt;
       if (meteor.fireTimer <= 0) {
         spawnEnemyBolt(meteor.x, meteor.y, ship.x, ship.y, 170 + gameState.difficulty * 10);
-        meteor.fireTimer = meteor.kind === 'drone' ? 2.2 : 2.8;
+        meteor.fireTimer = 2.8;
       }
     }
 
@@ -815,20 +808,6 @@ function drawMeteor(meteor) {
     ctx.moveTo(0, -meteor.radius - 12);
     ctx.lineTo(0, meteor.radius + 12);
     ctx.stroke();
-  } else if (meteor.kind === 'drone') {
-    ctx.fillStyle = '#ffb86b';
-    ctx.beginPath();
-    ctx.moveTo(0, -meteor.radius);
-    ctx.lineTo(meteor.radius, 0);
-    ctx.lineTo(0, meteor.radius);
-    ctx.lineTo(-meteor.radius, 0);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = '#ffe0a3';
-    ctx.beginPath();
-    ctx.arc(0, 0, meteor.radius * 0.35, 0, Math.PI * 2);
-    ctx.fill();
   } else {
     ctx.fillStyle = '#8d98a3';
     ctx.beginPath();

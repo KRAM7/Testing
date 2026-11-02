@@ -32,4 +32,4 @@ Then open http://localhost:8000 in a browser.
 
 ## How to play
 
-Choose a pilot and difficulty, then start a run. Dodge the incoming meteors, drones, satellites, and enemy fire while shooting to destroy hazards and bosses. You start with three lives; collect power-ups for temporary rapid fire, spread shots, shields, or an extra life. Keep moving during boss waves, and try to beat your high score.
+Choose a pilot and difficulty, then start a run. Dodge the incoming meteors, satellites, and enemy fire while shooting to destroy hazards and bosses. You start with three lives; collect power-ups for temporary rapid fire, spread shots, shields, or an extra life. Keep moving during boss waves, and try to beat your high score.
