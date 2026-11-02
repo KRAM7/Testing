@@ -69,9 +69,19 @@ const ship = {
   rapidTimer: 0,
   spreadTimer: 0,
   shieldTimer: 0,
+  slowTimer: 0,
 };
 
 const input = { left: false, right: false, up: false, down: false };
+const POWERUP_COLORS = {
+  rapid: '#7ee7ff',
+  shield: '#8dffb1',
+  spread: '#ffd166',
+  life: '#ff9ae4',
+  slow: '#a994ff',
+  bomb: '#ff8b6b',
+};
+const POWERUP_ICONS = { rapid: 'R', shield: 'S', spread: 'W', life: '+', slow: 'T', bomb: 'B' };
 
 function getModeSettings() {
   return MODE_CONFIG[gameState.mode] || MODE_CONFIG.normal;
@@ -197,6 +207,7 @@ function resetGame() {
   ship.rapidTimer = 0;
   ship.spreadTimer = 0;
   ship.shieldTimer = 0;
+  ship.slowTimer = 0;
   meteors = [];
   particles = [];
   powerUps = [];
@@ -219,6 +230,8 @@ function updateHud() {
     weaponEl.textContent = 'Rapid';
   } else if (ship.spreadTimer > 0) {
     weaponEl.textContent = 'Spread';
+  } else if (ship.slowTimer > 0) {
+    weaponEl.textContent = 'Slow';
   } else {
     weaponEl.textContent = 'Pulse';
   }
@@ -437,14 +450,18 @@ function spawnPowerUp(x, y, type = 'rapid') {
 
 function dropPowerUp(x, y) {
   const roll = Math.random();
-  if (roll < 0.2) {
+  if (roll < 0.17) {
     spawnPowerUp(x, y, 'rapid');
-  } else if (roll < 0.4) {
+  } else if (roll < 0.34) {
     spawnPowerUp(x, y, 'shield');
-  } else if (roll < 0.6) {
+  } else if (roll < 0.51) {
     spawnPowerUp(x, y, 'spread');
-  } else if (roll < 0.75) {
-    spawnPowerUp(x, y, 'repair');
+  } else if (roll < 0.66) {
+    spawnPowerUp(x, y, 'life');
+  } else if (roll < 0.81) {
+    spawnPowerUp(x, y, 'slow');
+  } else if (roll < 0.94) {
+    spawnPowerUp(x, y, 'bomb');
   }
 }
 
@@ -455,8 +472,26 @@ function powerUpShip(type) {
     ship.shieldTimer = 8;
   } else if (type === 'spread') {
     ship.spreadTimer = 8;
-  } else if (type === 'repair') {
+  } else if (type === 'life') {
     gameState.lives = Math.min(getModeSettings().lives, gameState.lives + 1);
+  } else if (type === 'slow') {
+    ship.slowTimer = 7;
+  } else if (type === 'bomb') {
+    meteors.forEach((meteor) => {
+      gameState.score += meteor.value;
+      createBurst(meteor.x, meteor.y, '#ffd166', 12);
+    });
+    meteors = [];
+    projectiles = projectiles.filter((projectile) => projectile.from === 'player');
+    if (boss) {
+      boss.health -= 8;
+      createBurst(boss.x, boss.y, '#ffd166', 20);
+      if (boss.health <= 0) {
+        gameState.score += 250;
+        createBurst(boss.x, boss.y, '#7ee7ff', 40);
+        boss = null;
+      }
+    }
   }
   playPowerupSound();
 }
@@ -495,8 +530,9 @@ function updateStars(dt) {
 function updateProjectiles(dt) {
   for (let i = projectiles.length - 1; i >= 0; i -= 1) {
     const projectile = projectiles[i];
-    projectile.x += projectile.vx * dt;
-    projectile.y += projectile.vy * dt;
+    const timeScale = projectile.from === 'enemy' && ship.slowTimer > 0 ? 0.55 : 1;
+    projectile.x += projectile.vx * dt * timeScale;
+    projectile.y += projectile.vy * dt * timeScale;
 
     if (projectile.from === 'player') {
       let hit = false;
@@ -574,19 +610,20 @@ function updateProjectiles(dt) {
 }
 
 function updateMeteors(dt) {
-  spawnTimer -= dt;
+  const timeScale = ship.slowTimer > 0 ? 0.55 : 1;
+  spawnTimer -= dt * timeScale;
   if (spawnTimer <= 0) {
     spawnWave();
   }
 
   for (let i = meteors.length - 1; i >= 0; i -= 1) {
     const meteor = meteors[i];
-    meteor.y += meteor.speed * dt;
-    meteor.x += meteor.drift * dt;
-    meteor.rotation += meteor.spin * dt;
+    meteor.y += meteor.speed * dt * timeScale;
+    meteor.x += meteor.drift * dt * timeScale;
+    meteor.rotation += meteor.spin * dt * timeScale;
 
     if (meteor.kind === 'satellite') {
-      meteor.fireTimer -= dt;
+      meteor.fireTimer -= dt * timeScale;
       if (meteor.fireTimer <= 0) {
         spawnEnemyBolt(meteor.x, meteor.y, ship.x, ship.y, (170 + gameState.difficulty * 10) * getModeSettings().enemyBulletSpeed);
         meteor.fireTimer = 2.8 * getModeSettings().enemyFireRate;
@@ -628,12 +665,13 @@ function updateBoss(dt) {
     return;
   }
 
-  boss.x += boss.speed * boss.direction * dt;
+  const timeScale = ship.slowTimer > 0 ? 0.55 : 1;
+  boss.x += boss.speed * boss.direction * dt * timeScale;
   if (boss.x > canvas.width - 120 || boss.x < 120) {
     boss.direction *= -1;
   }
 
-  boss.fireTimer -= dt;
+  boss.fireTimer -= dt * timeScale;
   if (boss.fireTimer <= 0) {
     const angle = Math.atan2(ship.y - boss.y, ship.x - boss.x);
     const speed = 230 * getModeSettings().enemyBulletSpeed;
@@ -705,6 +743,7 @@ function update(dt) {
   ship.rapidTimer = Math.max(0, ship.rapidTimer - dt);
   ship.spreadTimer = Math.max(0, ship.spreadTimer - dt);
   ship.shieldTimer = Math.max(0, ship.shieldTimer - dt);
+  ship.slowTimer = Math.max(0, ship.slowTimer - dt);
   ship.invulnerable = Math.max(0, ship.invulnerable - dt);
 
   gameState.time += dt;
@@ -867,7 +906,7 @@ function drawProjectiles() {
 
 function drawPowerUps() {
   for (const powerUp of powerUps) {
-    const color = powerUp.type === 'rapid' ? '#7ee7ff' : powerUp.type === 'shield' ? '#8dffb1' : powerUp.type === 'spread' ? '#ffd166' : '#ff9ae4';
+    const color = POWERUP_COLORS[powerUp.type] || '#ffffff';
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.arc(powerUp.x, powerUp.y, powerUp.radius, 0, Math.PI * 2);
@@ -877,7 +916,7 @@ function drawPowerUps() {
     ctx.font = 'bold 10px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(powerUp.type[0].toUpperCase(), powerUp.x, powerUp.y + 1);
+    ctx.fillText(POWERUP_ICONS[powerUp.type] || '?', powerUp.x, powerUp.y + 1);
   }
 }
 
