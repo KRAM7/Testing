@@ -104,21 +104,23 @@ function getModeSettings() {
 function ensureAudio() {
   if (audioContext) {
     if (audioContext.state === 'suspended') {
-      audioContext.resume().catch((error) => {
+      return audioContext.resume().catch((error) => {
         console.warn('Audio could not be resumed:', error);
+        return false;
       });
     }
-    return;
+    return Promise.resolve(audioContext.state === 'running');
   }
 
   const AudioCtor = window.AudioContext || window.webkitAudioContext;
   if (!AudioCtor) {
-    return;
+    return Promise.resolve(false);
   }
 
   audioContext = new AudioCtor();
-  audioContext.resume().catch((error) => {
+  return audioContext.resume().catch((error) => {
     console.warn('Audio could not be resumed:', error);
+    return false;
   });
 }
 
@@ -136,28 +138,54 @@ function playMusicNote(frequency, startTime, duration, type, volume) {
   oscillator.stop(startTime + duration + 0.03);
 }
 
+function playMusicKick(startTime) {
+  const oscillator = audioContext.createOscillator();
+  const noteGain = audioContext.createGain();
+  oscillator.type = 'sine';
+  oscillator.frequency.setValueAtTime(130, startTime);
+  oscillator.frequency.exponentialRampToValueAtTime(42, startTime + 0.14);
+  noteGain.gain.setValueAtTime(0.0001, startTime);
+  noteGain.gain.exponentialRampToValueAtTime(0.22, startTime + 0.008);
+  noteGain.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.16);
+  oscillator.connect(noteGain);
+  noteGain.connect(musicGain);
+  oscillator.start(startTime);
+  oscillator.stop(startTime + 0.18);
+}
+
+function playMusicSnare(startTime) {
+  playMusicNote(190, startTime, 0.09, 'triangle', 0.1);
+  playMusicNote(320, startTime, 0.045, 'square', 0.025);
+}
+
 function playMusicStep() {
-  if (!audioContext || !musicGain || !musicEnabled || !running || paused) {
+  if (!audioContext || audioContext.state !== 'running' || !musicGain || !musicEnabled || !running || paused) {
     return;
   }
 
   const startTime = audioContext.currentTime + 0.015;
   const melodyNote = MUSIC_MELODY[musicStep];
   if (melodyNote) {
-    playMusicNote(melodyNote, startTime, 0.19, 'square', 0.12);
+    playMusicNote(melodyNote, startTime, 0.14, 'square', 0.18);
   }
 
   if (musicStep % 4 === 0) {
     const bassNote = MUSIC_BASS[Math.floor(musicStep / 8) % MUSIC_BASS.length];
-    playMusicNote(bassNote, startTime, 0.42, 'triangle', 0.1);
-    playMusicNote(bassNote * 2, startTime, 0.12, 'triangle', 0.045);
+    playMusicNote(bassNote, startTime, 0.48, 'triangle', 0.16);
+    playMusicNote(bassNote * 2, startTime, 0.12, 'triangle', 0.06);
+  }
+
+  if (musicStep % 8 === 0) {
+    playMusicKick(startTime);
+  } else if (musicStep % 8 === 4) {
+    playMusicSnare(startTime);
   }
 
   musicStep = (musicStep + 1) % MUSIC_MELODY.length;
 }
 
 function startMusic() {
-  if (!musicEnabled || !audioContext || musicTimer !== null) {
+  if (!musicEnabled || !audioContext || audioContext.state !== 'running' || musicTimer !== null) {
     return;
   }
 
@@ -169,7 +197,7 @@ function startMusic() {
 
   musicGain.gain.setTargetAtTime(0.55, audioContext.currentTime, 0.18);
   playMusicStep();
-  musicTimer = window.setInterval(playMusicStep, 240);
+  musicTimer = window.setInterval(playMusicStep, 150);
 }
 
 function stopMusic() {
@@ -331,8 +359,8 @@ function setOverlayVisible(visible) {
   overlay.classList.toggle('visible', visible);
 }
 
-function startGame() {
-  ensureAudio();
+async function startGame() {
+  await ensureAudio();
   if (musicTimer !== null) {
     window.clearInterval(musicTimer);
     musicTimer = null;
