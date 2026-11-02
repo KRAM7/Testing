@@ -9,6 +9,7 @@ const bossStatusEl = document.getElementById('bossStatus');
 const overlay = document.getElementById('overlay');
 const startButton = document.getElementById('startButton');
 const pauseButton = document.getElementById('pauseButton');
+const musicButton = document.getElementById('musicButton');
 const characterButtons = [...document.querySelectorAll('.character-btn')];
 const difficultyButtons = [...document.querySelectorAll('.difficulty-btn')];
 const selectedCharacterEl = document.getElementById('selectedCharacter');
@@ -41,6 +42,18 @@ let selectedCharacter = 'nova';
 let boss = null;
 let bossWaveIndex = 0;
 let audioContext = null;
+let musicGain = null;
+let musicTimer = null;
+let musicStep = 0;
+let musicEnabled = true;
+
+const MUSIC_MELODY = [
+  523, null, 659, 784, null, 659, 523, null,
+  587, null, 698, 880, null, 698, 587, null,
+  523, null, 659, 784, 988, null, 784, 659,
+  587, null, 698, 880, 784, 698, 587, null,
+];
+const MUSIC_BASS = [131, 147, 110, 117];
 
 const characters = {
   nova: { name: 'Nova', primary: '#7ee7ff', accent: '#ffb86b', trail: '#6bf2ae', speed: 360, radius: 18 },
@@ -90,6 +103,11 @@ function getModeSettings() {
 
 function ensureAudio() {
   if (audioContext) {
+    if (audioContext.state === 'suspended') {
+      audioContext.resume().catch((error) => {
+        console.warn('Audio could not be resumed:', error);
+      });
+    }
     return;
   }
 
@@ -99,6 +117,75 @@ function ensureAudio() {
   }
 
   audioContext = new AudioCtor();
+  audioContext.resume().catch((error) => {
+    console.warn('Audio could not be resumed:', error);
+  });
+}
+
+function playMusicNote(frequency, startTime, duration, type, volume) {
+  const oscillator = audioContext.createOscillator();
+  const noteGain = audioContext.createGain();
+  oscillator.type = type;
+  oscillator.frequency.setValueAtTime(frequency, startTime);
+  noteGain.gain.setValueAtTime(0.0001, startTime);
+  noteGain.gain.exponentialRampToValueAtTime(volume, startTime + 0.025);
+  noteGain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+  oscillator.connect(noteGain);
+  noteGain.connect(musicGain);
+  oscillator.start(startTime);
+  oscillator.stop(startTime + duration + 0.03);
+}
+
+function playMusicStep() {
+  if (!audioContext || !musicGain || !musicEnabled || !running || paused) {
+    return;
+  }
+
+  const startTime = audioContext.currentTime + 0.015;
+  const melodyNote = MUSIC_MELODY[musicStep];
+  if (melodyNote) {
+    playMusicNote(melodyNote, startTime, 0.19, 'square', 0.12);
+  }
+
+  if (musicStep % 4 === 0) {
+    const bassNote = MUSIC_BASS[Math.floor(musicStep / 8) % MUSIC_BASS.length];
+    playMusicNote(bassNote, startTime, 0.42, 'triangle', 0.1);
+    playMusicNote(bassNote * 2, startTime, 0.12, 'triangle', 0.045);
+  }
+
+  musicStep = (musicStep + 1) % MUSIC_MELODY.length;
+}
+
+function startMusic() {
+  if (!musicEnabled || !audioContext || musicTimer !== null) {
+    return;
+  }
+
+  if (!musicGain) {
+    musicGain = audioContext.createGain();
+    musicGain.gain.value = 0.0001;
+    musicGain.connect(audioContext.destination);
+  }
+
+  musicGain.gain.setTargetAtTime(0.55, audioContext.currentTime, 0.18);
+  playMusicStep();
+  musicTimer = window.setInterval(playMusicStep, 240);
+}
+
+function stopMusic() {
+  if (musicTimer !== null) {
+    window.clearInterval(musicTimer);
+    musicTimer = null;
+  }
+
+  if (musicGain && audioContext) {
+    musicGain.gain.setTargetAtTime(0.0001, audioContext.currentTime, 0.08);
+  }
+}
+
+function updateMusicButton() {
+  musicButton.textContent = `Music: ${musicEnabled ? 'On' : 'Off'}`;
+  musicButton.setAttribute('aria-pressed', String(musicEnabled));
 }
 
 function playTone(frequency, duration, type = 'square', gainValue = 0.03, slide = 0) {
@@ -246,6 +333,11 @@ function setOverlayVisible(visible) {
 
 function startGame() {
   ensureAudio();
+  if (musicTimer !== null) {
+    window.clearInterval(musicTimer);
+    musicTimer = null;
+  }
+  musicStep = 0;
   if (animationId) {
     cancelAnimationFrame(animationId);
   }
@@ -256,6 +348,7 @@ function startGame() {
   applyCharacterSelection(selectedCharacter);
   resetGame();
   setOverlayVisible(false);
+  startMusic();
   lastTime = 0;
   animationId = requestAnimationFrame(loop);
 }
@@ -270,6 +363,7 @@ function togglePause() {
 
   if (paused) {
     cancelAnimationFrame(animationId);
+    stopMusic();
     overlay.querySelector('h1').textContent = 'Paused';
     overlay.querySelector('p').textContent = 'Take a breather. Press Resume to continue.';
     overlay.querySelector('button').textContent = 'Resume';
@@ -278,6 +372,7 @@ function togglePause() {
   }
 
   setOverlayVisible(false);
+  startMusic();
   lastTime = 0;
   animationId = requestAnimationFrame(loop);
 }
@@ -292,6 +387,7 @@ function resumeFromPause() {
 function gameOver() {
   running = false;
   paused = false;
+  stopMusic();
   pauseButton.textContent = 'Pause';
   playGameOverSound();
   const high = Math.max(gameState.best, gameState.score);
@@ -1084,6 +1180,16 @@ pauseButton.addEventListener('click', () => {
   togglePause();
 });
 
+musicButton.addEventListener('click', () => {
+  musicEnabled = !musicEnabled;
+  updateMusicButton();
+  if (musicEnabled && running && !paused) {
+    startMusic();
+  } else {
+    stopMusic();
+  }
+});
+
 characterButtons.forEach((button) => {
   button.addEventListener('click', () => {
     applyCharacterSelection(button.dataset.character);
@@ -1098,6 +1204,7 @@ difficultyButtons.forEach((button) => {
 
 applyCharacterSelection(selectedCharacter);
 applyDifficultySelection('normal');
+updateMusicButton();
 renderLeaderboard();
 createStars();
 updateHud();

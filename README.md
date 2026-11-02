@@ -30,6 +30,7 @@ Then open http://localhost:8000 in a browser.
 - Shoot: F, J, K, or left click
 - Phone or iPad: Hold the FIRE button to shoot continuously
 - Pause/resume: P or the Pause button
+- Music: Toggle Music: On/Off in the game HUD
 - Start: Click Start Game or press Space
 
 ## How to play
